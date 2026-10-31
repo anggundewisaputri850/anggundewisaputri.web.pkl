@@ -1,0 +1,6 @@
+<?php
+require_once __DIR__ . '/../include/session.php';require_once __DIR__ . '/../include/config.php';
+if(empty($_SESSION['user'])){header('Location: '.BASE_URL.'/index.php');exit;}
+$id=max(0,(int)($_GET['id']??0));$stmt=$conn->prepare('SELECT uploaded_file,nomor_surat FROM surat WHERE id=? LIMIT 1');$stmt->bind_param('i',$id);$stmt->execute();$row=$stmt->get_result()->fetch_assoc();$stmt->close();if(!$row||empty($row['uploaded_file'])){http_response_code(404);exit('Lampiran tidak ditemukan.');}
+$fileName=basename($row['uploaded_file']);$path=__DIR__.'/../uploads/surat/'.$fileName;if(!is_file($path)){http_response_code(404);exit('File lampiran tidak ditemukan.');}$finfo=new finfo(FILEINFO_MIME_TYPE);$mime=$finfo->file($path);$allowed=['application/pdf','image/jpeg','image/png'];if(!in_array($mime,$allowed,true)){http_response_code(415);exit('Format file tidak didukung.');}
+$mode=($_GET['mode']??'download')==='view'?'inline':'attachment';$ext=strtolower(pathinfo($fileName,PATHINFO_EXTENSION));$outName='surat-'.$id.'.'.$ext;header('X-Content-Type-Options: nosniff');header('Content-Type: '.$mime);header('Content-Length: '.filesize($path));header('Content-Disposition: '.$mode.'; filename="'.$outName.'"');readfile($path);exit;
